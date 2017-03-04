@@ -1,0 +1,57 @@
+<html>
+<head>
+<title>CS 3300 - Project 1</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="http://d3js.org/topojson.v2.min.js"></script>
+</head>
+<body>
+<svg id="hm" height="600" width="900">
+</svg>
+<script>
+
+// Maintain a dictionary of state names to abbreviations for quick conversion
+var stateAbbrevs = {};
+var map;
+var hmData;
+
+var svg = d3.select("#hm");
+
+d3.queue()
+// Hex map topojson from: https://pitchinteractiveinc.github.io/tilegrams/
+.defer(d3.json, "ushex-topo.json")
+.defer(d3.csv, "states.csv")
+.defer(d3.csv, "hm.csv", function(row) {
+	row.SearchInterest = Number(row.SearchInterest);
+	return row;
+})
+.await(function (error, hexMap, abbrevs, brandData) {
+
+	// Extract map data
+	map = topojson.feature(hexMap, hexMap.objects.tiles);
+
+	// Build the state names/abbreviations dictionary
+	// e.g. stateAbbrevs["California"] = "CA"
+	for(var i = 0; i < abbrevs.length; i++)
+		stateAbbrevs[abbrevs[i].Full] = abbrevs[i].Abbrev;
+
+	pathGenerator = d3.geoPath().projection(
+		d3.geoTransform({
+            point: function(x, y) {
+                this.stream.point(x * .5, svg.attr("height") - (y * .5));
+            }
+        })
+	);
+	
+	var paths = svg.selectAll("path.tiles").data(map.features);
+	paths.enter().append("path").attr("class", "state")
+	.merge(paths)
+	.style("fill", "#FFFFFF")
+	.attr('stroke', '#130C0E').attr('stroke-width', 4)
+	.attr("d", function (county) {
+		return pathGenerator(county);
+	});
+});
+
+</script>
+</body>
