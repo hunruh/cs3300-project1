@@ -9,14 +9,10 @@
 </head>
 
 <script>
-
-
-
 function createMap(brandName, brandCSVFile, color) {
 	// Maintain a dictionary of state names to abbreviations for quick conversion
 	var stateAbbrevs = {};
 	var map;
-	var dataBrand;
 	var svg = d3.select("body").append("svg").attr("height", 600).attr("width", 900);
 
 	d3.queue()
@@ -58,7 +54,7 @@ function createMap(brandName, brandCSVFile, color) {
 
 			svg.append("text")
 			.attr("x", svg.attr("width")/2)
-			.attr("y", 30)
+			.attr("y", 50)
 			.attr("font-size", 30)
 			.attr("text-anchor", "middle")
 			.attr("font-family", "Raleway")
@@ -83,9 +79,13 @@ function createMap(brandName, brandCSVFile, color) {
 		});
 	});
 }
-
-createMap("H&M", "hm.csv", "#b50000");
+createMap("Ralph Lauren", "ralph-lauren.csv", "#3C732E");
+createMap("Topshop", "topshop.csv", "#730046");
 createMap("Country Outfitters", "country-outfitters.csv", "#e55f00");
+createMap("Lulu Lemon", "lulu.csv", "#FF364D");
+createMap("Vineyard Vines", "vineyard-vines.csv", "#046380");
+createMap("H&M", "hm.csv", "#E92D00");
+createMap("Levi's", "levis.csv", "#1747B0");
 
 </script>
 
