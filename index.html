@@ -1,77 +1,92 @@
 <html>
 <head>
 <title>CS 3300 - Project 1</title>
-<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Raleway:600" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="http://d3js.org/topojson.v2.min.js"></script>
-</head>
 <body>
-<svg id="hm" height="600" width="900">
-</svg>
+</head>
+
 <script>
 
-// Maintain a dictionary of state names to abbreviations for quick conversion
-var stateAbbrevs = {};
-var map;
-var hmData;
 
-var svg = d3.select("#hm");
 
-d3.queue()
-// Hex map topojson from: https://pitchinteractiveinc.github.io/tilegrams/
-.defer(d3.csv, "gridmap-layout-usa.csv", function (row) {
-	return { x: Number(row["x"]), y: Number(row["y"]), abbrev: row["key"], name: row["name"] };
-})
-.defer(d3.csv, "hm.csv", function(row) {
-	return { state: row["Region"], value: Number(row["SearchInterest"]) };
-})
-.await(function (error, gridMap, brandData) {
-	var dataDict = {}
-	brandData.forEach(function (d) {
-		dataDict[d.state] = d.value;
+function createMap(brandName, brandCSVFile, color) {
+	// Maintain a dictionary of state names to abbreviations for quick conversion
+	var stateAbbrevs = {};
+	var map;
+	var dataBrand;
+	var svg = d3.select("body").append("svg").attr("height", 600).attr("width", 900);
+
+	d3.queue()
+	// Hex map topojson from: https://pitchinteractiveinc.github.io/tilegrams/
+	.defer(d3.csv, "gridmap-layout-usa.csv", function (row) {
+		return { x: Number(row["x"]), y: Number(row["y"]), abbrev: row["key"], name: row["name"] };
+	})
+	.defer(d3.csv, brandCSVFile, function(row) {
+		return { state: row["Region"], value: Number(row["SearchInterest"]) };
+	})
+	.await(function (error, gridMap, brandData) {
+		var dataDict = {}
+		brandData.forEach(function (d) {
+			dataDict[d.state] = d.value;
+		});
+
+		var xExtent = d3.extent(gridMap,
+			function(d) { return d.x; });
+		var xScale = d3.scaleLinear().domain(xExtent).range([80, svg.attr("width") - 80])
+
+		console.log(xExtent[1] - xExtent[0] + 1);
+
+		var yExtent = d3.extent(gridMap,
+			function(d) { return d.y; });
+		var yScale = d3.scaleLinear().domain(yExtent).range([80, svg.attr("height") - 80])
+
+		var searchExtent = d3.extent(brandData,
+			function(d) { return d.value})
+		var searchScale = d3.scaleLinear().domain(searchExtent).range([30, svg.attr("width")/(xExtent[1] - xExtent[0] + 1)])
+		var opacityScale = d3.scaleLinear().domain(searchExtent).range([.4, 1])
+		
+		gridMap.forEach(function (state) {
+			var size = searchScale(dataDict[state.name]);
+			// svg.append("rect")
+			// .attr("x", xScale(state.x) - size/2)
+			// .attr("y", yScale(state.y) - size/2)
+			// .attr("width", size)
+			// .attr("height", size);
+
+			svg.append("text")
+			.attr("x", svg.attr("width")/2)
+			.attr("y", 30)
+			.attr("font-size", 30)
+			.attr("text-anchor", "middle")
+			.attr("font-family", "Raleway")
+			.text(brandName);
+
+			svg.append("circle")
+			.attr("cx", xScale(state.x))
+			.attr("cy", xScale(state.y))
+			.attr("fill", color)
+			.attr("r", size/2)
+			.attr("opacity", opacityScale(dataDict[state.name]));
+
+			svg.append("text")
+			.attr("x", xScale(state.x))
+			.attr("y", xScale(state.y))
+			.attr("font-size", size/3)
+			.attr("alignment-baseline", "central")
+			.attr("text-anchor", "middle")
+			.attr("fill", "#ffffff")
+			.attr("font-family", "Raleway")
+			.text(state.abbrev);
+		});
 	});
+}
 
-	var xExtent = d3.extent(gridMap,
-		function(d) { return d.x; });
-	var xScale = d3.scaleLinear().domain(xExtent).range([20, svg.attr("width") - 20])
-
-	console.log(xExtent[1] - xExtent[0] + 1);
-
-	var yExtent = d3.extent(gridMap,
-		function(d) { return d.y; });
-	var yScale = d3.scaleLinear().domain(yExtent).range([20, svg.attr("height") - 20])
-
-	var searchExtent = d3.extent(brandData,
-		function(d) { return d.value})
-	var searchScale = d3.scaleLinear().domain(searchExtent).range([30, svg.attr("width")/(xExtent[1] - xExtent[0] + 1)])
-	
-	gridMap.forEach(function (state) {
-		var size = searchScale(dataDict[state.name]);
-		// svg.append("rect")
-		// .attr("x", xScale(state.x) - size/2)
-		// .attr("y", yScale(state.y) - size/2)
-		// .attr("width", size)
-		// .attr("height", size);
-
-		svg.append("circle")
-		.attr("cx", xScale(state.x))
-		.attr("cy", xScale(state.y))
-		.attr("fill", "#CCCCCC")
-		.attr("r", size/2);
-
-		svg.append("text")
-		.attr("x", xScale(state.x))
-		.attr("y", xScale(state.y))
-		.attr("alignment-baseline", "middle")
-		.attr("text-anchor", "middle")
-		.attr("font-family", "Source Sans Pro")
-		.attr("font-weight", "bolder")
-		.text(state.abbrev);
-	});
-
-
-});
+createMap("H&M", "hm.csv", "#b50000");
+createMap("Country Outfitters", "country-outfitters.csv", "#e55f00");
 
 </script>
+
 </body>
