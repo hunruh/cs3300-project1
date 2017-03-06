@@ -1,77 +1,144 @@
 <html>
 <head>
 <title>CS 3300 - Project 1</title>
-<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css?family=Raleway:600" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="http://d3js.org/topojson.v2.min.js"></script>
 </head>
 <body>
-<svg id="hm" height="600" width="900">
-</svg>
 <script>
 
 // Maintain a dictionary of state names to abbreviations for quick conversion
-var stateAbbrevs = {};
+var abbrevs = {};
+var gridDict = {};
 var map;
-var hmData;
-
-var svg = d3.select("#hm");
 
 d3.queue()
-// Hex map topojson from: https://pitchinteractiveinc.github.io/tilegrams/
+.defer(d3.csv, "states.csv", function (row) {
+	return { full: row["Full"], abbrev: row["Abbrev"]};
+})
 .defer(d3.csv, "gridmap-layout-usa.csv", function (row) {
 	return { x: Number(row["x"]), y: Number(row["y"]), abbrev: row["key"], name: row["name"] };
 })
-.defer(d3.csv, "hm.csv", function(row) {
-	return { state: row["Region"], value: Number(row["SearchInterest"]) };
-})
-.await(function (error, gridMap, brandData) {
-	var dataDict = {}
-	brandData.forEach(function (d) {
-		dataDict[d.state] = d.value;
+.await(function (error, abbrevsMap, gridMap) {
+	// Maintain a dictionary of state names to abbreviations for quick conversion
+	abbrevsMap.forEach(function (d) {
+		abbrevs[d.full] = d.abbrev;
 	});
 
-	var xExtent = d3.extent(gridMap,
-		function(d) { return d.x; });
-	var xScale = d3.scaleLinear().domain(xExtent).range([20, svg.attr("width") - 20])
+	map = gridMap;
 
-	console.log(xExtent[1] - xExtent[0] + 1);
+	gridMap.forEach(function (d) {
+		gridDict[d.name] = d;
+	});
 
-	var yExtent = d3.extent(gridMap,
-		function(d) { return d.y; });
-	var yScale = d3.scaleLinear().domain(yExtent).range([20, svg.attr("height") - 20])
-
-	var searchExtent = d3.extent(brandData,
-		function(d) { return d.value})
-	var searchScale = d3.scaleLinear().domain(searchExtent).range([30, svg.attr("width")/(xExtent[1] - xExtent[0] + 1)])
+	createMap("Ralph Lauren", "ralph-lauren.csv", "#3C732E");
+	createMap("Topshop", "topshop.csv", "#730046");
+	createMap("Country Outfitters", "country-outfitters.csv", "#e55f00");
+	createMap("Lulu Lemon", "lulu.csv", "#FF364D");
+	createMap("Vineyard Vines", "vineyard-vines.csv", "#046380");
+	createMap("H&M", "hm.csv", "#E92D00");
+	createMap("Levi's", "levis.csv", "#1747B0");
+});
 	
-	gridMap.forEach(function (state) {
-		var size = searchScale(dataDict[state.name]);
-		// svg.append("rect")
-		// .attr("x", xScale(state.x) - size/2)
-		// .attr("y", yScale(state.y) - size/2)
-		// .attr("width", size)
-		// .attr("height", size);
 
-		svg.append("circle")
-		.attr("cx", xScale(state.x))
-		.attr("cy", xScale(state.y))
-		.attr("fill", "#CCCCCC")
-		.attr("r", size/2);
+function parseRow(row) {
+	return { state: row["Region"], value: Number(row["SearchInterest"]) };
+}
+
+function createMap(brandName, brandCSVFile, color) {
+	var svg = d3.select("body").append("svg").attr("height", 650).attr("width", 650);
+
+	d3.csv(brandCSVFile, parseRow, function(error, brandData) {
+		var dataDict = {}
+		brandData.forEach(function (d) {
+			dataDict[d.state] = d.value;
+		});
+
+		var searchExtent = d3.extent(brandData, function(d) { return d.value; });
+		var scaleRange = [13, 55];
+		var searchScale = d3.scaleLinear().domain(searchExtent).range(scaleRange);
+		var opacityScale = d3.scaleLinear().domain(searchExtent).range([.4, 1]);
+
+		var pack = d3.pack()
+		.size([svg.attr("width"), svg.attr("height")])
+		.radius(function(d) { return searchScale(dataDict[d.id]); })
+		.padding(3);
+
+		// Pack is heirarchy and thus needs a root node, so we append one
+		brandData.push({state: "United States"})
+		var stratify = d3.stratify()
+		.id(function(d) { return d.state; })
+	    .parentId(function(d) { 
+	    	if (d.state == "United States")
+	    		return null;
+	    	else
+	    		return "United States";
+	    });
+
+		var root = stratify(brandData);
+		pack(root);
+
+		var stateNodes = root.descendants();
+		stateNodes.shift();
 
 		svg.append("text")
-		.attr("x", xScale(state.x))
-		.attr("y", xScale(state.y))
-		.attr("alignment-baseline", "middle")
+		.attr("x", svg.attr("width")/2)
+		.attr("y", 50)
+		.attr("font-size", 30)
 		.attr("text-anchor", "middle")
-		.attr("font-family", "Source Sans Pro")
-		.attr("font-weight", "bolder")
-		.text(state.abbrev);
+		.attr("font-family", "Raleway")
+		.text(brandName);
+
+	    var states = svg.append("g")
+        .attr("transform", "translate(0,0)")
+        .selectAll(".bubble")
+        .data(stateNodes)
+        .enter();
+
+	    // Don't show the parent circle (United States)
+	    if (function(d) { return d.depth != 0; }) {
+		    states.append("circle")
+	    	.attr("cx", function(d){ return d.x; })
+	    	.attr("cy", function(d){ return d.y; })
+	   		.attr("r", function(d){ return d.r; })
+	    	.style("fill", function(d) { return color; })
+	    	.attr("opacity", function(d) { return opacityScale(dataDict[d.id]) });
+
+		    states.append("text")
+	    	.attr("x", function(d){ return d.x; })
+	    	.attr("y", function(d){
+	    		if (d.r > (scaleRange[0] + scaleRange[1])/2)
+	    			return d.y - d.r/8;
+	    		else
+	    			return d.y;
+	    	})
+	    	.attr("font-size", function(d){ return d.r/1.7; })
+	    	.attr("alignment-baseline", "central")
+	    	.attr("text-anchor", "middle")
+	    	.attr("fill", "#ffffff")
+			.attr("font-family", "Raleway")
+	    	.text(function(d){ return abbrevs[d.id]; })
+
+	    	states.append("text")
+	    	.attr("x", function(d){ return d.x; })
+	    	.attr("y", function(d){ return d.y + d.r/3.5; })
+	    	.attr("font-size", function(d){
+	    		if (d.r > (scaleRange[0] + scaleRange[1])/2)
+	    			return d.r/5.5;
+	    		else
+	    			return 0;
+	    	})
+	    	.attr("alignment-baseline", "central")
+	    	.attr("text-anchor", "middle")
+	    	.attr("fill", "#ffffff")
+			.attr("font-family", "Raleway")
+	    	.text(function(d){ return d.id; })
+	    }
 	});
-
-
-});
+		
+}
 
 </script>
 </body>
