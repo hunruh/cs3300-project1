@@ -26,17 +26,28 @@ var visualizationCenter = [xPos, 610];
 var visualizationRadius = 450;
 
 // Define the brands, their data files, and their representation color
-var brands = [["Ralph Lauren", "ralph-lauren.csv", "#3C732E"],
-              ["Topshop", "topshop.csv", "#730046"],
-              ["Country Outfitters", "country-outfitters.csv", "#e55f00"],
-              ["Lulu Lemon", "lulu.csv", "#FF364D"],
-              ["Vineyard Vines", "vineyard-vines.csv", "#046380"],
-              ["H&M", "hm.csv", "#E92D00"],
-              ["Levi's", "levis.csv", "#1747B0"]];
+var brands = [["Ralph Lauren", "ralph-lauren.csv", "#3C732E",
+               "ralph-lauren-white.png"],
+              ["Topshop", "topshop.csv", "#730046",
+               "topshop-white.png"],
+              ["Carhartt", "carhartt.csv", "#e55f00",
+               "carhartt-white.png"],
+              ["Lululemon", "lulu.csv", "#FF364D",
+               "lululemon-white.png"],
+              ["Vineyard Vines", "vineyard-vines.csv", "#046380",
+               "vineyard-vines-white.png"],
+              ["H&M", "hm.csv", "#E92D00",
+               "hm-white.png"],
+              ["Levi's", "levis.csv", "#1747B0",
+               "levis-white.png"]];
 
 // Declare CSV parsing functions for later
 function parseBrandRow(row) {
     return { state: row["Region"], value: Number(row["SearchInterest"]) };
+}
+
+function parseCompareRow(row) {
+    return { brand: row["Brand"], value: Number(row["SearchInterest"]) };
 }
 
 function parseGridRow(row) {
@@ -68,7 +79,92 @@ d3.csv("gridmap-layout-usa.csv", parseGridRow, function (error, gridMap) {
 
         degCntr += degInc;
     });
+
+    createBrandCluster(visualizationCenter[0], visualizationCenter[1], "all-brands.csv");
 });
+
+function createBrandCluster(x, y, csv) {
+    // Store width and height for convenience later
+    var width = 500;
+    var height = 500;
+
+    // Generate a new SVG element and position it as specified
+    var svg = d3.select("body").append("svg").attr("height", height).attr("width", width)
+    .attr("style", "position: absolute;" + 
+                   "top: " + (y - height/2) + ";" + 
+                   "left: " + (x - width/2) + ";");
+
+    d3.csv(csv, parseCompareRow, function(error, compareData) {
+        var dataDict = {}
+        compareData.forEach(function (d) {
+            dataDict[d.brand] = d.value;
+        });
+
+        var searchExtent = d3.extent(compareData, function(d) { return d.value; });
+        var scaleRange = [50,90];
+        var searchScale = d3.scaleLinear().domain(searchExtent).range(scaleRange);
+
+        var pack = d3.pack()
+        .size([svg.attr("width"), svg.attr("height")])
+        .radius(function(d) { return searchScale(dataDict[d.id]); })
+        .padding(3);
+
+        // Pack is heirarchy and thus needs a root node, so we append one
+        compareData.push({brand: "root"})
+        var stratify = d3.stratify()
+        .id(function(d) { return d.brand; })
+        .parentId(function(d) { 
+            if (d.brand == "root")
+                return null;
+            else
+                return "root";
+        });
+
+        var root = stratify(compareData);
+        pack(root);
+
+        var brandNodes = root.descendants();
+        brandNodes.shift();
+
+        var brandCircs = svg.append("g")
+        .attr("transform", "translate(0,0)")
+        .selectAll(".bubble")
+        .data(brandNodes)
+        .enter();
+
+        // Don't show the parent circle (root)
+        if (function(d) { return d.depth != 0; }) {
+            brandCircs.append("circle")
+            .attr("cx", function(d){ return d.x; })
+            .attr("cy", function(d){ return d.y; })
+            .attr("r", function(d){ return d.r; })
+            .style("fill", function(d) {
+                for (i = 0; i < brands.length; i++) {
+                    if (brands[i][0] == d.id)
+                        return brands[i][2];
+                }
+
+                return "#999999";
+            });
+            // .attr("opacity", function(d) { return opacityScale(dataDict[d.id]) });
+
+            brandCircs.append("image")
+            .attr("x", function(d){ return d.x; })
+            .attr("y", function(d){ return d.y; })
+            .attr("width", function(d){ return d.r*2 - 20; } )
+            .attr("height", function(d){ return d.r*2 - 20; } )
+            .attr("href",  function(d) {
+                for (i = 0; i < brands.length; i++) {
+                    if (brands[i][0] == d.id)
+                        return brands[i][3];
+                }
+
+                return "";
+            })
+            .attr("style", "transform: translate(-50%, -50%)");
+        }
+    });
+}
 
 function createMap(x, y, brandName, brandCSVFile, color) {
     // Store width and height for convenience later
