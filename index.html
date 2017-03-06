@@ -5,87 +5,151 @@
 <link rel="stylesheet" href="style.css">
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="http://d3js.org/topojson.v2.min.js"></script>
-<body>
 </head>
+<body>
 
 <script>
-function createMap(brandName, brandCSVFile, color) {
-	// Maintain a dictionary of state names to abbreviations for quick conversion
-	var stateAbbrevs = {};
-	var map;
-	var svg = d3.select("body").append("svg").attr("height", 600).attr("width", 900);
 
-	d3.queue()
-	// Hex map topojson from: https://pitchinteractiveinc.github.io/tilegrams/
-	.defer(d3.csv, "gridmap-layout-usa.csv", function (row) {
-		return { x: Number(row["x"]), y: Number(row["y"]), abbrev: row["key"], name: row["name"] };
-	})
-	.defer(d3.csv, brandCSVFile, function(row) {
-		return { state: row["Region"], value: Number(row["SearchInterest"]) };
-	})
-	.await(function (error, gridMap, brandData) {
-		var dataDict = {}
-		brandData.forEach(function (d) {
-			dataDict[d.state] = d.value;
-		});
+var map;
+var gridDict = {};
 
-		var xExtent = d3.extent(gridMap,
-			function(d) { return d.x; });
-		var xScale = d3.scaleLinear().domain(xExtent).range([80, svg.attr("width") - 80])
+// If the screen has a large width, center the visualization, otherwise
+// put it at a position that is guaranteed to fit on screen
+var xPos;
+if (window.innerWidth > 1350)
+    xPos = window.innerWidth/2;
+else
+    xPos = 660;
 
-		console.log(xExtent[1] - xExtent[0] + 1);
+// The visualization is oriented as a circle
+var visualizationCenter = [xPos, 610];
+var visualizationRadius = 450;
 
-		var yExtent = d3.extent(gridMap,
-			function(d) { return d.y; });
-		var yScale = d3.scaleLinear().domain(yExtent).range([80, svg.attr("height") - 80])
+// Define the brands, their data files, and their representation color
+var brands = [["Ralph Lauren", "ralph-lauren.csv", "#3C732E"],
+              ["Topshop", "topshop.csv", "#730046"],
+              ["Country Outfitters", "country-outfitters.csv", "#e55f00"],
+              ["Lulu Lemon", "lulu.csv", "#FF364D"],
+              ["Vineyard Vines", "vineyard-vines.csv", "#046380"],
+              ["H&M", "hm.csv", "#E92D00"],
+              ["Levi's", "levis.csv", "#1747B0"]];
 
-		var searchExtent = d3.extent(brandData,
-			function(d) { return d.value})
-		var searchScale = d3.scaleLinear().domain(searchExtent).range([30, svg.attr("width")/(xExtent[1] - xExtent[0] + 1)])
-		var opacityScale = d3.scaleLinear().domain(searchExtent).range([.2, 1])
-		
-		gridMap.forEach(function (state) {
-			var size = searchScale(dataDict[state.name]);
-			// svg.append("rect")
-			// .attr("x", xScale(state.x) - size/2)
-			// .attr("y", yScale(state.y) - size/2)
-			// .attr("width", size)
-			// .attr("height", size);
-
-			svg.append("text")
-			.attr("x", svg.attr("width")/2)
-			.attr("y", 50)
-			.attr("font-size", 30)
-			.attr("text-anchor", "middle")
-			.attr("font-family", "Raleway")
-			.text(brandName);
-
-			svg.append("circle")
-			.attr("cx", xScale(state.x))
-			.attr("cy", xScale(state.y))
-			.attr("fill", color)
-			.attr("r", size/2)
-			.attr("opacity", opacityScale(dataDict[state.name]));
-
-			svg.append("text")
-			.attr("x", xScale(state.x))
-			.attr("y", xScale(state.y))
-			.attr("font-size", size/3)
-			.attr("alignment-baseline", "central")
-			.attr("text-anchor", "middle")
-			.attr("fill", "#ffffff")
-			.attr("font-family", "Raleway")
-			.text(state.abbrev);
-		});
-	});
+// Declare CSV parsing functions for later
+function parseBrandRow(row) {
+    return { state: row["Region"], value: Number(row["SearchInterest"]) };
 }
-createMap("Ralph Lauren", "ralph-lauren.csv", "#3C732E");
-createMap("Topshop", "topshop.csv", "#730046");
-createMap("Country Outfitters", "country-outfitters.csv", "#e55f00");
-createMap("Lulu Lemon", "lulu.csv", "#FF364D");
-createMap("Vineyard Vines", "vineyard-vines.csv", "#046380");
-createMap("H&M", "hm.csv", "#E92D00");
-createMap("Levi's", "levis.csv", "#1747B0");
+
+function parseGridRow(row) {
+    return { x: Number(row["x"]),
+             y: Number(row["y"]),
+             abbrev: row["key"],
+             name: row["name"] };
+}
+
+// Gridmap data used from: https://github.com/kristw/gridmap-layout-usa
+// (with MIT license)
+d3.csv("gridmap-layout-usa.csv", parseGridRow, function (error, gridMap) {
+    map = gridMap;
+    gridMap.forEach(function (d) {
+        gridDict[d.name] = d;
+    });
+
+    // Prepare to position brand graphs in equidistant locations around a circle
+    var degInc = 360.0/(brands.length);
+    var degCntr = 20;
+
+    brands.forEach(function (d) {
+        // Calculate Polar Coordinates for each graph, then convert to Cartesian
+        var x = visualizationCenter[0] +
+                (visualizationRadius * Math.cos((Math.PI / 180) * degCntr));
+        var y = visualizationCenter[1] +
+                (visualizationRadius * Math.sin((Math.PI / 180) * degCntr));
+        createMap(x, y, d[0], d[1], d[2]);
+
+        degCntr += degInc;
+    });
+});
+
+function createMap(x, y, brandName, brandCSVFile, color) {
+    // Store width and height for convenience later
+    var width = 450;
+    var height = 300;
+
+    // Generate a new SVG element and position it as specified
+    var svg = d3.select("body").append("svg").attr("height", height).attr("width", width)
+    .attr("style", "position: absolute;" + 
+                   "top: " + (y - height/2) + ";" + 
+                   "left: " + (x - width/2) + ";");
+
+    d3.csv(brandCSVFile, parseBrandRow, function(error, brandData) {
+        // Make data easily accessible later as a dict (state name -> value)
+        var dataDict = {}
+        brandData.forEach(function (d) {
+            dataDict[d.state] = d.value;
+        });
+
+        // Scale up the grid coordinates from the CSV to fit the SVG
+        var xExtent = d3.extent(map,
+            function(d) { return d.x; });
+        var xScale = d3.scaleLinear()
+        .domain(xExtent)
+        .range([80, width - 80])
+
+        var yExtent = d3.extent(map,
+            function(d) { return d.y; });
+        var yScale = d3.scaleLinear()
+        .domain(yExtent)
+        .range([80, height - 80]);
+
+        // Scale the values for each state - scaling is performed on both
+        // size and color (opacity)
+        var searchExtent = d3.extent(brandData,
+            function(d) { return d.value; });
+        var searchScale = d3.scaleLinear()
+        .domain(searchExtent)
+        .range([16, svg.attr("width")/(xExtent[1] - xExtent[0] + 6)]);
+        var opacityScale = d3.scaleLinear()
+        .domain(searchExtent)
+        .range([.4, 1]);
+
+        // Draw the brand title
+        svg.append("text")
+        .attr("x", svg.attr("width")/2)
+        .attr("y", 50)
+        .attr("font-size", 30)
+        .attr("text-anchor", "middle")
+        .attr("font-family", "Raleway")
+        .text(brandName);
+        
+        // Iterate and draw data for each state
+        map.forEach(function (state) {
+            var size = searchScale(dataDict[state.name]);
+
+            // Occasionally some states do not have data - in this case
+            // do not attempt to draw (avoid errors)
+            if (!isNaN(size)) {
+                // Actually draw the data for a state in the form of a circle
+                svg.append("circle")
+                .attr("cx", xScale(state.x))
+                .attr("cy", xScale(state.y))
+                .attr("fill", color)
+                .attr("r", size/2)
+                .attr("opacity", opacityScale(dataDict[state.name]));
+
+                // Label each state appropriately
+                svg.append("text")
+                .attr("x", xScale(state.x))
+                .attr("y", xScale(state.y))
+                .attr("font-size", size/3)
+                .attr("alignment-baseline", "central")
+                .attr("text-anchor", "middle")
+                .attr("fill", "#ffffff")
+                .attr("font-family", "Raleway")
+                .text(state.abbrev);
+            }
+        });
+    });
+}
 
 </script>
 
