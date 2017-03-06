@@ -42,7 +42,7 @@ function createMap(brandName, brandCSVFile, color) {
 		var searchExtent = d3.extent(brandData,
 			function(d) { return d.value})
 		var searchScale = d3.scaleLinear().domain(searchExtent).range([30, svg.attr("width")/(xExtent[1] - xExtent[0] + 1)])
-		var opacityScale = d3.scaleLinear().domain(searchExtent).range([.4, 1])
+		var opacityScale = d3.scaleLinear().domain(searchExtent).range([.2, 1])
 		
 		gridMap.forEach(function (state) {
 			var size = searchScale(dataDict[state.name]);
