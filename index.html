@@ -10,8 +10,10 @@
 
 <script>
 
-var map;
+var gridMap;
 var gridDict = {};
+var popDict = {};
+var popScale;
 
 // If the screen has a large width, center the visualization, otherwise
 // put it at a position that is guaranteed to fit on screen
@@ -61,11 +63,23 @@ function parseGridRow(row) {
 
 // Gridmap data used from: https://github.com/kristw/gridmap-layout-usa
 // (with MIT license)
-d3.csv("gridmap-layout-usa.csv", parseGridRow, function (error, gridMap) {
-    map = gridMap;
+d3.queue()
+.defer(d3.csv, "population.csv", function(row) {
+    return { stateName: row["Name"], population: Number(row["2017 Population"])};
+})
+.defer(d3.csv, "gridmap-layout-usa.csv", parseGridRow)
+.await( function (error, popData, gridMapData) {
+    gridMap = gridMapData;
     gridMap.forEach(function (d) {
         gridDict[d.name] = d;
     });
+
+    popData.forEach(function (d) {
+        popDict[d.stateName] = d.population;
+    });
+
+    var popExtent = d3.extent(popData, function(d) { return d.population} );
+    popScale = d3.scaleLog().domain(popExtent).range([.2, 1])
 
     // Prepare to position brand graphs in equidistant locations around a circle
     var degInc = 360.0/(brands.length);
@@ -187,13 +201,13 @@ function createMap(x, y, brandName, brandCSVFile, color, brandPicture) {
         });
 
         // Scale up the grid coordinates from the CSV to fit the SVG
-        var xExtent = d3.extent(map,
+        var xExtent = d3.extent(gridMap,
             function(d) { return d.x; });
         var xScale = d3.scaleLinear()
         .domain(xExtent)
         .range([80, width - 80])
 
-        var yExtent = d3.extent(map,
+        var yExtent = d3.extent(gridMap,
             function(d) { return d.y; });
         var yScale = d3.scaleLinear()
         .domain(yExtent)
@@ -205,10 +219,7 @@ function createMap(x, y, brandName, brandCSVFile, color, brandPicture) {
             function(d) { return d.value; });
         var searchScale = d3.scaleLinear()
         .domain(searchExtent)
-        .range([16, svg.attr("width")/(xExtent[1] - xExtent[0] + 6)]);
-        var opacityScale = d3.scaleLinear()
-        .domain(searchExtent)
-        .range([.4, 1]);
+        .range([13, svg.attr("width")/(xExtent[1] - xExtent[0] + 6)]);
 
         // Draw the brand title
         svg.append("image")
@@ -221,7 +232,7 @@ function createMap(x, y, brandName, brandCSVFile, color, brandPicture) {
         .attr("style", "transform: translate(-50%, -50%)");
 
         // Iterate and draw data for each state
-        map.forEach(function (state) {
+        gridMap.forEach(function (state) {
             var size = searchScale(dataDict[state.name]);
 
             // Occasionally some states do not have data - in this case
@@ -233,7 +244,8 @@ function createMap(x, y, brandName, brandCSVFile, color, brandPicture) {
                 .attr("cy", xScale(state.y))
                 .attr("fill", color)
                 .attr("r", size/2)
-                .attr("opacity", opacityScale(dataDict[state.name]));
+                .attr("opacity", popScale(popDict[state.name]));
+                // .attr("opacity", opacityScale(dataDict[state.name]));
 
                 // Label each state appropriately
                 svg.append("text")
