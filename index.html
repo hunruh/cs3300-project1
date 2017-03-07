@@ -8,6 +8,8 @@
 </head>
 <body>
 
+<h1 id="title">Search Interest of Fashion Brands in the United States</h1>
+
 <script>
 
 var gridMap;
@@ -17,14 +19,14 @@ var popExtent;
 
 // If the screen has a large width, center the visualization, otherwise
 // put it at a position that is guaranteed to fit on screen
-var xPos;
-if (window.innerWidth > 1350)
-    xPos = window.innerWidth/2;
-else
-    xPos = 660;
+var xPos = 660;
+// if (window.innerWidth > 1350)
+//     xPos = window.innerWidth/2;
+// else
+//     xPos = 660;
 
 // The visualization is oriented as a circle
-var visualizationCenter = [xPos, 610];
+var visualizationCenter = [xPos, 650];
 var visualizationRadius = 450;
 
 // Define the brands, their data files, and their representation color
@@ -282,6 +284,15 @@ function createMap(x, y, brandName, brandCSVFile, color, brandPicture) {
 
 </script>
 <style>
+    #title {
+        position: absolute;
+        white-space: nowrap;
+        top: 5px;
+        left: 660px;
+        font-family: "Raleway";
+        transform: translateX(-50%);
+        text-align: center;
+    }
     #Topshop {
         width: 150;
         height: 80;
