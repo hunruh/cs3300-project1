@@ -245,6 +245,24 @@ function createMap(x, y, brandName, brandCSVFile, color, brandPicture) {
                 .attr("fill", "#ffffff")
                 .attr("font-family", "Raleway")
                 .text(state.abbrev);
+            } else {
+            	// Actually draw the data for a state in the form of a circle
+                svg.append("circle")
+                .attr("cx", xScale(state.x))
+                .attr("cy", xScale(state.y))
+                .attr("fill", "#999")
+                .attr("r", 8);
+
+                // Label each state appropriately
+                svg.append("text")
+                .attr("x", xScale(state.x))
+                .attr("y", xScale(state.y))
+                .attr("font-size", 5)
+                .attr("alignment-baseline", "central")
+                .attr("text-anchor", "middle")
+                .attr("fill", "#ffffff")
+                .attr("font-family", "Raleway")
+                .text(state.abbrev);
             }
         });
     });
