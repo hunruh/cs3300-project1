@@ -15,18 +15,10 @@
 var gridMap;
 var gridDict = {};
 var popDict = {};
-var popExtent;
-
-// If the screen has a large width, center the visualization, otherwise
-// put it at a position that is guaranteed to fit on screen
-var xPos = 660;
-// if (window.innerWidth > 1350)
-//     xPos = window.innerWidth/2;
-// else
-//     xPos = 660;
+var popScale;
 
 // The visualization is oriented as a circle
-var visualizationCenter = [xPos, 650];
+var visualizationCenter = [660, 650];
 var visualizationRadius = 450;
 
 // Define the brands, their data files, and their representation color
@@ -80,6 +72,7 @@ d3.queue()
         popDict[d.stateName] = d.population;
     });
     popExtent = d3.extent(popData, function(d) { return d.population} );
+    popScale = d3.scaleLog().domain(popExtent).range([0.4, 1.0]);
 
     // Prepare to position brand graphs in equidistant locations around a circle
     var degInc = 360.0/(brands.length);
@@ -222,8 +215,6 @@ function createMap(x, y, brandName, brandCSVFile, color, brandPicture) {
         .domain(searchExtent)
         .range([13, svg.attr("width")/(xExtent[1] - xExtent[0] + 6)]);
 
-        popScaleGrey = d3.scaleLinear().domain(popExtent).range(["#999", color]);
-
         // Draw the brand title
         svg.append("image")
         .attr("x", svg.attr("width")/2)
@@ -246,8 +237,8 @@ function createMap(x, y, brandName, brandCSVFile, color, brandPicture) {
                 .attr("cx", xScale(state.x))
                 .attr("cy", xScale(state.y))
                 .attr("r", size/2)
-                .attr("fill", popScaleGrey(popDict[state.name]));
-                // .attr("opacity", popScaleOpacity(popDict[state.name]));
+                .attr("fill", color)
+                .attr("opacity", popScale(popDict[state.name]));
 
                 // Label each state appropriately
                 svg.append("text")
