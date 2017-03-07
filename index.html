@@ -26,20 +26,22 @@ var visualizationCenter = [xPos, 610];
 var visualizationRadius = 450;
 
 // Define the brands, their data files, and their representation color
-var brands = [["Ralph Lauren", "ralph-lauren.csv", "#3C732E",
-               "ralph-lauren-white.png"],
-              ["Topshop", "topshop.csv", "#730046",
-               "topshop-white.png"],
-              ["Carhartt", "carhartt.csv", "#e55f00",
-               "carhartt-white.png"],
-              ["Lululemon", "lulu.csv", "#FF364D",
-               "lululemon-white.png"],
-              ["Vineyard Vines", "vineyard-vines.csv", "#046380",
-               "vineyard-vines-white.png"],
-              ["H&M", "hm.csv", "#E92D00",
-               "hm-white.png"],
+var brands = [["Carhartt", "carhartt.csv", "#e55f00",
+               "carhartt-white.png", "carhartt.png"],
+              ["RalphLauren", "ralph-lauren.csv", 
+                "#3C732E",
+               "ralph-lauren-white.png", 
+               "ralph-lauren.png"],
+              ["VineyardVines", "vineyard-vines.csv", "#046380",
+               "vineyard-vines-white.png", "vineyard-vines.png"],
               ["Levi's", "levis.csv", "#1747B0",
-               "levis-white.png"]];
+               "levis-white.png", "levis.png"],
+              ["H&M", "hm.csv", "#E92D00",
+               "hm-white.png", "hm.png"],
+              ["Topshop", "topshop.csv", "#730046",
+               "topshop-white.png", "topshop.png"],
+              ["Lululemon", "lulu.csv", "#FF364D",
+               "lululemon-white.png", "lululemon.png"]];
 
 // Declare CSV parsing functions for later
 function parseBrandRow(row) {
@@ -75,7 +77,7 @@ d3.csv("gridmap-layout-usa.csv", parseGridRow, function (error, gridMap) {
                 (visualizationRadius * Math.cos((Math.PI / 180) * degCntr));
         var y = visualizationCenter[1] +
                 (visualizationRadius * Math.sin((Math.PI / 180) * degCntr));
-        createMap(x, y, d[0], d[1], d[2]);
+        createMap(x, y, d[0], d[1], d[2], d[4]);
 
         degCntr += degInc;
     });
@@ -166,7 +168,7 @@ function createBrandCluster(x, y, csv) {
     });
 }
 
-function createMap(x, y, brandName, brandCSVFile, color) {
+function createMap(x, y, brandName, brandCSVFile, color, brandPicture) {
     // Store width and height for convenience later
     var width = 450;
     var height = 300;
@@ -209,14 +211,15 @@ function createMap(x, y, brandName, brandCSVFile, color) {
         .range([.4, 1]);
 
         // Draw the brand title
-        svg.append("text")
+        svg.append("image")
         .attr("x", svg.attr("width")/2)
+        .attr("id", brandName)
         .attr("y", 50)
-        .attr("font-size", 30)
-        .attr("text-anchor", "middle")
-        .attr("font-family", "Raleway")
-        .text(brandName);
-        
+        .attr("width", 100)
+        .attr("height", 50)
+        .attr("href", brandPicture)
+        .attr("style", "transform: translate(-50%, -50%)");
+
         // Iterate and draw data for each state
         map.forEach(function (state) {
             var size = searchScale(dataDict[state.name]);
@@ -248,5 +251,18 @@ function createMap(x, y, brandName, brandCSVFile, color) {
 }
 
 </script>
-
+<style>
+    #Topshop {
+        width: 150;
+        height: 80;
+    }
+    #RalphLauren {
+        width: 150;
+        height: 80;
+    }
+    #VineyardVines {
+        width: 150;
+        height: 80;
+    }
+</style>
 </body>
