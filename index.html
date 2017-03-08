@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>CS 3300 - Project 1 (hju3, cc987, saw294)</title>
+<title>INFO/CS 3300 - Project 1 (hju3, cc987, saw294)</title>
 <link href="https://fonts.googleapis.com/css?family=Raleway:600" rel="stylesheet">
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="http://d3js.org/topojson.v2.min.js"></script>
@@ -21,20 +21,28 @@ var visualizationCenter = [660, 650];
 var visualizationRadius = 450;
 
 // Define the brands, their data files, their representation color, and their logos
+// Image sources are noted respectively
 var brands = [["Carhartt", "carhartt.csv", "#a63603", "#d94801", "#f16913", "#fd8d3c", "#fdae6b",
-               "carhartt-white.png", "carhartt.png"],
+               "carhartt-white.png", //https://s-media-cache-ak0.pinimg.com/236x/6b/be/16/6bbe16094c52afd7495436fdffd71b38.jpg (modified)
+               "carhartt.png"], //http://www.dfiles.me/carhartt-logo-png.html
               ["RalphLauren", "ralph-lauren.csv", "#006d2c", "#238b45", "#41ab5d", "#74c476", "#a1d99b",
-               "ralph-lauren-white.png", "ralph-lauren.png"],
+               "ralph-lauren-white.png", //https://www.lovethesales.com/upload/landing-pages/brand-merchant/Ralph%20Lauren%20Logo.png
+               "ralph-lauren.png"], //https://clipartfest.com/categories/view/693d1a464e6a532a9df111caa22da5616c2e0731/polo-ralph-lauren-logo-clipart.html
               ["VineyardVines", "vineyard-vines.csv", "#0570b0", "#3690c0", "#74a9cf", "#a6bddb", "#d0d1e6",
-               "vineyard-vines-white.png", "vineyard-vines.png"],
+               "vineyard-vines-white.png", //http://www.vineyardvines.com/on/demandware.static/Sites-Vineyard-Vines-Site/-/default/dw89695fd1/img/logo@2.6x.png (modified)
+               "vineyard-vines.png"], //http://www.vineyardvines.com/
               ["Levi's", "levis.csv", "#08519c", "#2171b5", "#4292c6", "#6baed6", "#9ecae1",
-               "levis-white.png", "levis.png"],
+               "levis-white.png", //http://www.wearethemoment.com/wp-content/uploads/case-study/Levis_Logo_White.png
+               "levis.png"], //http://4vector.com/free-vector/levis-logo-90977
               ["H&M", "hm.csv", "#e31a1c", "#fc4e2a", "#fd8d3c", "#feb24c", "#FEAF76",
-               "hm-white.png", "hm.png"],
+               "hm-white.png", //http://www.whitewatersc.ie/wp-content/uploads/2015/07/store-hm1.png
+               "hm.png"], //http://logoes.wikia.com/wiki/File:2000px-H%26M_logo.svg.png
               ["Topshop", "topshop.csv", "#7a0177", "#ae017e", "#dd3497", "#f768a1", "#fa9fb5",
-               "topshop-white.png", "topshop.png"],
+               "topshop-white.png", //http://logos-download.com/wp-content/uploads/2016/05/Topshop_logo_black.png (modified)
+               "topshop.png"], //http://logos-download.com/6244-topshop-logo-download.html
               ["Lululemon", "lulu.csv", "#ce1256", "#e7298a", "#df65b0", "#c994c7", "#d4b9da",
-               "lululemon-white.png", "lululemon.png"]];
+               "lululemon-white.png", //https://static1.squarespace.com/static/555e4d53e4b07f0c954148e2/571eaf69356fb086c58d6dbb/573a2ac4e707eb8fa9e288f7/1463429850129/lululemon+logo.png (modified)
+               "lululemon.png"]]; //http://www.bloodknots.com/lululemon--life-in-luon.html
 
 // Declare CSV parsing functions for later
 function parseBrandRow(row) {
@@ -52,6 +60,7 @@ function parseGridRow(row) {
              name: row["name"] };
 }
 
+// Population data from: http://worldpopulationreview.com/states/
 // Gridmap data used from: https://github.com/kristw/gridmap-layout-usa
 // (with MIT license)
 d3.queue()
